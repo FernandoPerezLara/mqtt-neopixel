@@ -6,32 +6,28 @@ WiFiNode::WiFiNode(const char* ssid, const char* password) {
 }
 
 void WiFiNode::begin() {
-	WiFi.begin(ssid, password);
-	
 	Serial.printf("Connecting to %s \n", ssid);
-
-	while (WiFi.status() != WL_CONNECTED) { delay(500); }
-	Serial.printf("Connected to %s \n\n", ssid);
+	WiFi.begin(ssid, password);
 
 	WiFi.setAutoReconnect(true);
   	WiFi.persistent(true);
 }
 
 bool WiFiNode::isConnected() {
-	if (WiFi.status() != WL_CONNECTED) {
-		if (connection_lost == false) {
-			Serial.printf("\nWiFi connection lost. Reconnecting... \n");
+	if (WiFi.status() == WL_CONNECTED) {
+		if (is_connected == false) {
+			Serial.printf("Connected to %s \n", ssid);
+
+			is_connected = true;
+		}
+	} else {
+		if (is_connected == true) {
+			Serial.printf("WiFi connection lost. Reconnecting... \n");
+
+			is_connected = false;
 		}
 
-		connection_lost = true;
-		
 		return false;
-	} else {
-		if (connection_lost == true) {
-			connection_lost = false;
-			
-			Serial.printf("Connected to %s \n", ssid);
-		}
 	}
 
 	return true;

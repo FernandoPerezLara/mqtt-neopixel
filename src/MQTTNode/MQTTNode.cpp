@@ -6,6 +6,8 @@ MQTTNode::MQTTNode(const char* broker, int port, const char* username, const cha
 	this->username = username;
 	this->password = password;
 	this->name = name;
+
+	this->topics = (char **) malloc(sizeof(char *));
 }
 
 void MQTTNode::begin(void (*callback)(char*, byte*, unsigned int)) {
@@ -14,44 +16,52 @@ void MQTTNode::begin(void (*callback)(char*, byte*, unsigned int)) {
 	client.setCallback(callback);
 
 	Serial.printf("Connecting to the MQTT broker with address %s \n", broker);
+	client.connect(name, username, password);
+}
 
-	while (!client.connected()) {
-		if (client.connect(name, username, password)) {
-			Serial.printf("Connected to the MQTT broker \n\n");
-		} else {
-			delay(500);
-		}
+void MQTTNode::addTopic(const char* topic) {
+	topics = (char **) realloc(topics, sizeof(char *) * (topics_length + 1));
+	topics[topics_length] = (char *) malloc(sizeof(char) * strlen(topic));
+	
+	strcpy(topics[topics_length], topic);
+
+	topics_length += 1;
+}
+
+void MQTTNode::suscribe() {
+	char* concat = (char*) malloc(sizeof(char));
+
+	for (int i = 0; i < topics_length; i++) {
+		concat = (char *) realloc(concat, sizeof(char) * (strlen(topics[i]) + strlen(name) + 1));
+		
+		strcpy(concat, name);
+		strcat(concat, "/");
+		strcat(concat, topics[i]);
+		
+		client.subscribe(concat);
+
+		Serial.printf("Subscribed to topic %s \n", concat);
 	}
 }
 
-void MQTTNode::suscribe(const char* topic) {
-	char* concat = (char*) malloc(strlen(topic) + strlen(name) + 1);
-	
-	strcpy(concat, name);
-	strcat(concat, "/");
-	strcat(concat, topic);
-	
-	client.subscribe(concat);
-
-	Serial.printf("Subscribed to topic %s \n", concat);
-}
-
 bool MQTTNode::isConnected() {
-	if (!client.connected()) {
-		if (!client.connect(name, username, password)) {
-			if (connection_lost == false) {
-				Serial.printf("\nMQTT broker connection lost. Reconnecting...\n");
-			}
-
-			connection_lost = true;
-		}
-
-		return false;
-	} else {
-		if (connection_lost == true) {
-			connection_lost = false;
-			
+	if (client.connected()) {
+		if (is_connected == false) {
 			Serial.printf("Connected to the MQTT broker \n");
+
+			suscribe();
+
+			is_connected = true;
+		}
+	} else {
+		if (!client.connect(name, username, password)) {
+			if (is_connected == true) {
+				Serial.printf("MQTT broker connection lost. Reconnecting...\n");
+				
+				is_connected = false;
+			}
+			
+			return false;
 		}
 	}
 

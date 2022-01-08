@@ -14,7 +14,8 @@ class MQTTNode {
 		MQTTNode(const char* broker, int port, const char* username, const char* password, const char* name);
 
 		void begin(void (*callback)(char*, byte*, unsigned int));
-		void suscribe(const char* topic);
+		void addTopic(const char* topic);
+		void suscribe();
 		bool isConnected();
 		void publish(const char* topic, const char* payload);
 		void loop();
@@ -30,7 +31,10 @@ class MQTTNode {
 		const char* password;
 		const char* name;
 
-		bool connection_lost = false;
+		char** topics;
+		int topics_length = 0;
+
+		bool is_connected = false;
 };
 
 #endif

@@ -13,8 +13,8 @@ class WiFiNode {
 	private:
 		const char* ssid;
 		const char* password;
-		
-		bool connection_lost = false;
+
+		bool is_connected = false;
 };
 
 #endif
